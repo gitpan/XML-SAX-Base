@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.7 2001/12/06 18:58:11 darobin Exp $
+# $Id: Makefile.PL,v 1.10 2002/04/29 05:31:38 kip Exp $
 
 use strict;
 
@@ -31,6 +31,8 @@ package XML::SAX::Base;
 # version 1.00 - Kip Hampton <khampton@totalcinema.com>
 # version 1.01 - Kip Hampton <khampton@totalcinema.com>
 # version 1.02 - Robin Berjon <robin@knowscape.com>
+# version 1.03 - Matt Sergeant <matt@sergeant.org>
+# version 1.04 - Kip Hampton <khampton@totalcinema.com>
 
 #-----------------------------------------------------#
 # STOP!!!!!
@@ -44,7 +46,8 @@ package XML::SAX::Base;
 use strict;
 use vars qw($VERSION);
 use XML::SAX::Exception qw();
-$VERSION = '1.02';
+
+$VERSION = '1.04';
 
 EOHEADER
 
@@ -108,8 +111,9 @@ sub $ev {
        for my $h (@{$EVENT_SPEC{$ev}}) {
             $can_string .= <<"            EOCANBLOCK";
         elsif (defined \$callbacks->{'$h'} and \$method = \$callbacks->{'$h'}->can('$ev') ) {
-            \$self->{Methods}->{'$ev'} = sub { \$method->(\$callbacks->{'$h'}, \@_) };
-            \$method->(\$callbacks->{$h}, \@_);
+            my \$handler = \$callbacks->{'$h'};
+            \$self->{Methods}->{'$ev'} = sub { \$method->(\$handler, \@_) };
+            return \$method->(\$handler, \@_);
         }
             EOCANBLOCK
             $aload_string .= <<"            EOALOADBLOCK";
@@ -122,7 +126,8 @@ sub $ev {
                 # I think there's a buggette here...
                 # if the first call throws an exception, we don't set it up right.
                 # Not fatal, but we might want to address it.
-                \$self->{Methods}->{'$ev'} = sub { \$callbacks->{'$h'}->$ev(\@_) };
+                my \$handler = \$callbacks->{'$h'};
+                \$self->{Methods}->{'$ev'} = sub { \$handler->$ev(\@_) };
             }
             return \$res;
         }
@@ -133,7 +138,7 @@ sub $ev {
 
             $code .= <<"            EOFALLTHROUGH";
         else {
-            \$self->{Methods}->{'$ev'} = sub { \$self->no_op };
+            \$self->{Methods}->{'$ev'} = sub { };
         }
     }
             EOFALLTHROUGH
@@ -150,8 +155,21 @@ sub new {
     my $class = ref($proto) || $proto;
     my $options = ($#_ == 0) ? shift : { @_ };
 
-    $options->{Handler} ||= XML::SAX::Base::NoHandler->new;
-    return bless $options, $class;
+    unless ( defined( $options->{Handler} )         or
+             defined( $options->{ContentHandler} )  or
+             defined( $options->{DTDHandler} )      or
+             defined( $options->{DocumentHandler} ) or
+             defined( $options->{LexicalHandler} )  or
+             defined( $options->{ErrorHandler} )    or
+             defined( $options->{DeclHandler} ) ) {
+            
+             $options->{Handler} = XML::SAX::Base::NoHandler->new;
+    }
+
+    my $self = bless $options, $class;
+    # turn NS processing on by default
+    $self->set_feature('http://xml.org/sax/features/namespaces', 1);
+    return $self;
 }
 #-------------------------------------------------------------------#
 
@@ -266,10 +284,27 @@ sub get_features {
 sub get_feature {
     my $self = shift;
     my $feat = shift;
+
     # check %FEATURES to see if it's there, and return it if so
     # throw XML::SAX::Exception::NotRecognized if it's not there
     # throw XML::SAX::Exception::NotSupported if it's there but we
     # don't support it
+    
+    my %features = $self->get_features();
+    if (exists $features{$feat}) {
+        my %supported = map { $_ => 1 } $self->supported_features();
+        if ($supported{$feat}) {
+            return $self->{__PACKAGE__ . "::Features"}{$feat};
+        }
+        throw XML::SAX::Exception::NotSupported(
+            Message => "The feature '$feat' is not supported by " . ref($self),
+            Exception => undef,
+            );
+    }
+    throw XML::SAX::Exception::NotRecognized(
+        Message => "The feature '$feat' is not recognized by " . ref($self),
+        Exception => undef,
+        );
 }
 #-------------------------------------------------------------------#
 
@@ -284,6 +319,68 @@ sub set_feature {
     # throw XML::SAX::Exception::NotRecognized if it's not there
     # throw XML::SAX::Exception::NotSupported if it's there but we
     # don't support it
+    
+    my %features = $self->get_features();
+    if (exists $features{$feat}) {
+        my %supported = map { $_ => 1 } $self->supported_features();
+        if ($supported{$feat}) {
+            return $self->{__PACKAGE__ . "::Features"}{$feat} = $value;
+        }
+        throw XML::SAX::Exception::NotSupported(
+            Message => "The feature '$feat' is not supported by " . ref($self),
+            Exception => undef,
+            );
+    }
+    throw XML::SAX::Exception::NotRecognized(
+        Message => "The feature '$feat' is not recognized by " . ref($self),
+        Exception => undef,
+        );
+}
+#-------------------------------------------------------------------#
+
+#-------------------------------------------------------------------#
+# get_handler and friends
+#-------------------------------------------------------------------#
+sub get_handler {
+    my $self = shift;
+    my $handler_type = shift;
+    $handler_type ||= 'Handler';
+    return  defined( $self->{$handler_type} ) ? $self->{$handler_type} : undef;
+}
+
+sub get_document_handler {
+    my $self = shift;
+    return $self->get_handler('DocumentHandler', @_);
+}
+
+sub get_content_handler {
+    my $self = shift;
+    return $self->get_handler('ContentHandler', @_);
+}
+
+sub get_dtd_handler {
+    my $self = shift;
+    return $self->get_handler('DTDHandler', @_);
+}
+
+sub get_lexical_handler {
+    my $self = shift;
+    return $self->get_handler('LexicalHandler', @_);
+}
+
+sub get_decl_handler {
+    my $self = shift;
+    return $self->get_handler('DeclHandler', @_);
+}
+
+sub get_error_handler {
+    my $self = shift;
+    return $self->get_handler('ErrorHandler', @_);
+}
+
+sub get_entity_resolver {
+    my $self = shift;
+    return $self->get_handler('EntityResolver', @_);
 }
 #-------------------------------------------------------------------#
 
@@ -354,6 +451,7 @@ package XML::SAX::Base::NoHandler;
 # simplifies the code a lot (though given the recent changes,
 # it may be better to do without)
 sub new {
+    #warn "no handler called\n";
     return bless {};
 }
 
@@ -531,6 +629,18 @@ directly will most likely cause trouble).
 These are just simple wrappers around the former method, and take a
 handler object as their argument. Internally they simply call
 set_handler with the correct arguments.
+
+=item * get_handler
+
+The inverse of set_handler, this method takes a an optional string containing a handler type (DTDHandler, 
+ContentHandler, etc. 'Handler' is used if no type is passed). It returns a reference to the object that implements
+that that class, or undef if that handler type is not set for the current driver/filter. 
+
+=item * get_document_handler, get_content_handler, get_dtd_handler, get_lexical_handler, get_decl_handler, 
+get_error_handler, get_entity_resolver
+
+These are just simple wrappers around the get_handler() method, and take no arguments. Internally 
+they simply call get_handler with the correct handler type name.
 
 =back
 

@@ -2,8 +2,7 @@ Makefile.PL
 Changes
 README
 MANIFEST
-lib/XML/SAX/Base.pm
-lib/XML/SAX/Exception.pm
+lib/XML/SAX/placeholder.pl
 t/00basic.t
 t/01exception.t
 t/01simpledriver.t
@@ -21,5 +20,6 @@ t/12sax2multiclass.t
 t/13handlerswitch.t
 t/14downstreamswitch.t
 t/15parentswitch.t
+t/16gethandlers.t
 t/events.pl
 
