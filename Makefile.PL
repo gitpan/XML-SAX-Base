@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.1 2001/11/19 14:31:31 matt Exp $
+# $Id: Makefile.PL,v 1.7 2001/12/06 18:58:11 darobin Exp $
 
 use strict;
 
@@ -18,11 +18,6 @@ sub build_xml_sax_base {
     my $code = <<'EOHEADER';
 package XML::SAX::Base;
 
-use strict;
-use vars qw($VERSION);
-
-$VERSION = '1.00';
-
 # version 0.10 - Kip Hampton <khampton@totalcinema.com>
 # version 0.13 - Robin Berjon <robin@knowscape.com>
 # version 0.15 - Kip Hampton <khampton@totalcinema.com>
@@ -34,6 +29,8 @@ $VERSION = '1.00';
 # version 0.24 - Robin Berjon <robin@knowscape.com>
 # version 0.25 - Kip Hampton <khampton@totalcinema.com>
 # version 1.00 - Kip Hampton <khampton@totalcinema.com>
+# version 1.01 - Kip Hampton <khampton@totalcinema.com>
+# version 1.02 - Robin Berjon <robin@knowscape.com>
 
 #-----------------------------------------------------#
 # STOP!!!!!
@@ -44,12 +41,10 @@ $VERSION = '1.00';
 # this one.
 #-----------------------------------------------------#
 
-package XML::SAX::Base;
-
 use strict;
 use vars qw($VERSION);
 use XML::SAX::Exception qw();
-$VERSION = '0.25';
+$VERSION = '1.02';
 
 EOHEADER
 
@@ -93,39 +88,54 @@ EOHEADER
         $code .= <<"        EOTOPCODE";
 sub $ev {
     my \$self = shift;
-    my \$method;
     if (defined \$self->{Methods}->{'$ev'}) {
         \$self->{Methods}->{'$ev'}->(\@_);
     }
+    else {
+        my \$method;
+        my \$callbacks;
+        if (exists \$self->{ParseOptions}) {
+            \$callbacks = \$self->{ParseOptions};
+        }
+        else {
+            \$callbacks = \$self;
+        }
+        if (0) { # dummy to make elsif's below compile
+        }
         EOTOPCODE
 
        my ($can_string, $aload_string);
        for my $h (@{$EVENT_SPEC{$ev}}) {
             $can_string .= <<"            EOCANBLOCK";
-    elsif (defined \$self->{'$h'} and \$method = \$self->{'$h'}->can('$ev') ) {
-        \$self->{Methods}->{'$ev'} = sub { \$self->{$h}->$ev(\@_) };
-        \$method->(\$self->{$h}, \@_);
-    }
+        elsif (defined \$callbacks->{'$h'} and \$method = \$callbacks->{'$h'}->can('$ev') ) {
+            \$self->{Methods}->{'$ev'} = sub { \$method->(\$callbacks->{'$h'}, \@_) };
+            \$method->(\$callbacks->{$h}, \@_);
+        }
             EOCANBLOCK
             $aload_string .= <<"            EOALOADBLOCK";
-    elsif (defined \$self->{'$h'} and \$self->{'$h'}->can('AUTOLOAD') ) {
-        eval { \$self->{'$h'}->$ev(\@_) };
-        if (\$@) {
-            die \$@;
+        elsif (defined \$callbacks->{'$h'} and \$callbacks->{'$h'}->can('AUTOLOAD') ) {
+            my \$res = eval { \$callbacks->{'$h'}->$ev(\@_) };
+            if (\$@) {
+                die \$@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                \$self->{Methods}->{'$ev'} = sub { \$callbacks->{'$h'}->$ev(\@_) };
+            }
+            return \$res;
         }
-        else {
-            \$self->{Methods}->{'$ev'} = sub { \$self->{'$h'}->$ev(\@_) };
-        }
-    }
             EOALOADBLOCK
         }
 
         $code .= $can_string . $aload_string;
 
             $code .= <<"            EOFALLTHROUGH";
-   else {
-       \$self->{Methods}->{'$ev'} = sub { \$self->no_op };
-   }
+        else {
+            \$self->{Methods}->{'$ev'} = sub { \$self->no_op };
+        }
+    }
             EOFALLTHROUGH
 
         $code .= "\n}\n\n";
@@ -151,25 +161,24 @@ sub new {
 sub parse {
     my $self = shift;
     my $parse_options = $self->get_options(@_);
+    local $self->{ParseOptions} = $parse_options;
     if ($self->{Parent}) { # calling parse on a filter for some reason
         return $self->{Parent}->parse($parse_options);
     }
     else {
-        if (defined $parse_options->{Source}{CharacterStream} && $self->can('_parse_characterstream')) {
-            return $self->_parse_characterstream(
-                    $parse_options->{Source}{CharacterStream}, $parse_options);
+        my $method;
+        if (defined $parse_options->{Source}{CharacterStream} and $method = $self->can('_parse_characterstream')) {
+            warn("parse charstream???\n");
+            return $method->($self, $parse_options->{Source}{CharacterStream});
         }
-        elsif (defined $parse_options->{Source}{ByteStream} && $self->can('_parse_characterstream')) {
-            return $self->_parse_bytestream(
-                    $parse_options->{Source}{ByteStream}, $parse_options);
+        elsif (defined $parse_options->{Source}{ByteStream} and $method = $self->can('_parse_bytestream')) {
+            return $method->($self, $parse_options->{Source}{ByteStream});
         }
-        elsif (defined $parse_options->{Source}{String} && $self->can('_parse_string')) {
-            return $self->_parse_string(
-                    $parse_options->{Source}{String}, $parse_options);
+        elsif (defined $parse_options->{Source}{String} and $method = $self->can('_parse_string')) {
+            return $method->($self, $parse_options->{Source}{String});
         }
-        elsif (defined $parse_options->{Source}{SystemId} && $self->can('_parse_systemid')) {
-            return $self->_parse_systemid(
-                    $parse_options->{Source}{SystemId}, $parse_options);
+        elsif (defined $parse_options->{Source}{SystemId} and $method = $self->can('_parse_systemid')) {
+            return $method->($self, $parse_options->{Source}{SystemId});
         }
         else {
             die "No _parse_* routine defined on this driver (if it a filter, remember to set the Parent property) [$self]";
@@ -276,6 +285,50 @@ sub set_feature {
     # throw XML::SAX::Exception::NotSupported if it's there but we
     # don't support it
 }
+#-------------------------------------------------------------------#
+
+#-------------------------------------------------------------------#
+# set_handler and friends
+#-------------------------------------------------------------------#
+sub set_handler {
+    my $self = shift;
+    my ($new_handler, $handler_type) = reverse @_;
+    $handler_type ||= 'Handler';
+    $self->{Methods} = {} if $self->{Methods};
+    $self->{$handler_type} = $new_handler;
+    return 1;
+}
+
+sub set_document_handler {
+    my $self = shift;
+    return $self->set_handler('DocumentHandler', @_);
+}
+
+sub set_content_handler {
+    my $self = shift;
+    return $self->set_handler('ContentHandler', @_);
+}
+sub set_dtd_handler {
+    my $self = shift;
+    return $self->set_handler('DTDHandler', @_);
+}
+sub set_lexical_handler {
+    my $self = shift;
+    return $self->set_handler('LexicalHandler', @_);
+}
+sub set_decl_handler {
+    my $self = shift;
+    return $self->set_handler('DeclHandler', @_);
+}
+sub set_error_handler {
+    my $self = shift;
+    return $self->set_handler('ErrorHandler', @_);
+}
+sub set_entity_resolver {
+    my $self = shift;
+    return $self->set_handler('EntityResolver', @_);
+}
+
 #-------------------------------------------------------------------#
 
 #-------------------------------------------------------------------#
@@ -463,6 +516,22 @@ for features not defined by your class. An example would be:
 
 Currently this part is unimplemented.
 
+
+=item * set_handler
+
+This method takes a handler type (Handler, ContentHandler, etc.) and a
+handler object as arguments, and changes the current handler for that
+handler type, while taking care of resetting the internal state that 
+needs to be reset. This allows one to change a handler during parse
+without running into problems (changing it on the parser object 
+directly will most likely cause trouble).
+
+=item * set_document_handler, set_content_handler, set_dtd_handler, set_lexical_handler, set_decl_handler, set_error_handler, set_entity_resolver
+
+These are just simple wrappers around the former method, and take a
+handler object as their argument. Internally they simply call
+set_handler with the correct arguments.
+
 =back
 
 It would be rather useless to describe all the methods that this
@@ -587,7 +656,8 @@ use strict;
 use overload '""' => "stringify",
     'fallback' => 1;
 
-use vars qw/$StackTrace/;
+use vars qw/$StackTrace $VERSION/;
+$VERSION = '1.01';
 use Carp;
 
 $StackTrace = $ENV{XML_DEBUG} || 0;
@@ -670,15 +740,38 @@ XML::SAX::Exception - Exception classes for XML::SAX
 
 =head1 DESCRIPTION
 
-blah blah blah
+This module is the base class for all SAX Exceptions, those defined in
+the spec as well as those that one may create for one's own SAX errors.
 
-There are three subclasses included:
+There are three subclasses included, corresponding to those of the SAX
+spec:
 
   XML::SAX::Exception::NotSupported
   XML::SAX::Exception::NotRecognized
   XML::SAX::Exception::Parse
 
-Use them.
+Use them wherever you want, and as much as possible when you encounter
+such errors. SAX is meant to use exceptions as much as possible to 
+flag problems.
+
+=head1 CREATING NEW EXCEPTION CLASSES
+
+All you need to do to create a new exception class is:
+
+  @XML::SAX::Exception::MyException::ISA = ('XML::SAX::Exception')
+
+The given package doesn't need to exist, it'll behave correctly this 
+way. If your exception refines an existing exception class, then you
+may also inherit from that instead of from the base class.
+
+=head1 THROWING EXCEPTIONS
+
+This is as simple as exemplified in the SYNOPSIS. In fact, there's 
+nothing more to know. All you have to do is:
+
+  throw XML::SAX::Exception::MyException( Message => 'Something went wrong' );
+
+and voila, you've thrown an exception which can be caught in an eval block.
 
 =cut
 

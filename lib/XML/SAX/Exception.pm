@@ -5,7 +5,8 @@ use strict;
 use overload '""' => "stringify",
     'fallback' => 1;
 
-use vars qw/$StackTrace/;
+use vars qw/$StackTrace $VERSION/;
+$VERSION = '1.01';
 use Carp;
 
 $StackTrace = $ENV{XML_DEBUG} || 0;
@@ -88,15 +89,38 @@ XML::SAX::Exception - Exception classes for XML::SAX
 
 =head1 DESCRIPTION
 
-blah blah blah
+This module is the base class for all SAX Exceptions, those defined in
+the spec as well as those that one may create for one's own SAX errors.
 
-There are three subclasses included:
+There are three subclasses included, corresponding to those of the SAX
+spec:
 
   XML::SAX::Exception::NotSupported
   XML::SAX::Exception::NotRecognized
   XML::SAX::Exception::Parse
 
-Use them.
+Use them wherever you want, and as much as possible when you encounter
+such errors. SAX is meant to use exceptions as much as possible to 
+flag problems.
+
+=head1 CREATING NEW EXCEPTION CLASSES
+
+All you need to do to create a new exception class is:
+
+  @XML::SAX::Exception::MyException::ISA = ('XML::SAX::Exception')
+
+The given package doesn't need to exist, it'll behave correctly this 
+way. If your exception refines an existing exception class, then you
+may also inherit from that instead of from the base class.
+
+=head1 THROWING EXCEPTIONS
+
+This is as simple as exemplified in the SYNOPSIS. In fact, there's 
+nothing more to know. All you have to do is:
+
+  throw XML::SAX::Exception::MyException( Message => 'Something went wrong' );
+
+and voila, you've thrown an exception which can be caught in an eval block.
 
 =cut
 

@@ -17,13 +17,32 @@ ok($meth_count == 6);
 # end main
 
 package Filter;
-use base qw(XML::SAX::Base);
+BEGIN {
+    if ($] < 5.6) {
+        use XML::SAX::Base;
+        use vars qw/@ISA/;
+        @ISA =  qw/XML::SAX::Base/;
+    }
+    else {
+        use base qw/XML::SAX::Base/;
+    }
+}
+
 # this space intentionally blank
 
 1;
 
 package Driver;
-use base qw(XML::SAX::Base);
+BEGIN {
+    if ($] < 5.6) {
+        use XML::SAX::Base;
+        use vars qw/@ISA/;
+        @ISA =  qw/XML::SAX::Base/;
+    }
+    else {
+        use base qw/XML::SAX::Base/;
+    }
+}
 
 sub _parse {
     my $self = shift;

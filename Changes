@@ -1,5 +1,9 @@
 Revision history for Perl extension XML::SAX::Base.
 
+1.01 Mon Nov 26 01:56:33 2001
+	- added set_handler method (and friends).
+	- added to test suite
+
 1.00 Tue Nov 20 01:01:22 2001
 	- created standalone 1.0 distribution.
 

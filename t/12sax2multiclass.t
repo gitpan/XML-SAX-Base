@@ -29,43 +29,112 @@ ok($meth_count == 32);
 # end main
 
 package MyContentHandler;
-use base qw(XML::SAX::Base);
+BEGIN {
+    if ($] < 5.6) {
+        use XML::SAX::Base;
+        use vars qw/@ISA/;
+        @ISA =  qw/XML::SAX::Base/;
+    }
+    else {
+        use base qw/XML::SAX::Base/;
+    }
+}
+
 # this space intentionally blank
 
 1;
 
 package MyLexicalHandler;
-use base qw(XML::SAX::Base);
+BEGIN {
+    if ($] < 5.6) {
+        use XML::SAX::Base;
+        use vars qw/@ISA/;
+        @ISA =  qw/XML::SAX::Base/;
+    }
+    else {
+        use base qw/XML::SAX::Base/;
+    }
+}
+
 # this space intentionally blank
 
 1;
 
 package MyDeclHandler;
-use base qw(XML::SAX::Base);
+BEGIN {
+    if ($] < 5.6) {
+        use XML::SAX::Base;
+        use vars qw/@ISA/;
+        @ISA =  qw/XML::SAX::Base/;
+    }
+    else {
+        use base qw/XML::SAX::Base/;
+    }
+}
+
 # this space intentionally blank
 
 1;
 
 package MyErrorHandler;
-use base qw(XML::SAX::Base);
+BEGIN {
+    if ($] < 5.6) {
+        use XML::SAX::Base;
+        use vars qw/@ISA/;
+        @ISA =  qw/XML::SAX::Base/;
+    }
+    else {
+        use base qw/XML::SAX::Base/;
+    }
+}
+
 # this space intentionally blank
 
 1;
 
 package MyEntityResolver;
-use base qw(XML::SAX::Base);
+BEGIN {
+    if ($] < 5.6) {
+        use XML::SAX::Base;
+        use vars qw/@ISA/;
+        @ISA =  qw/XML::SAX::Base/;
+    }
+    else {
+        use base qw/XML::SAX::Base/;
+    }
+}
+
 # this space intentionally blank
 
 1;
 
 package MyDTDHandler;
-use base qw(XML::SAX::Base);
+BEGIN {
+    if ($] < 5.6) {
+        use XML::SAX::Base;
+        use vars qw/@ISA/;
+        @ISA =  qw/XML::SAX::Base/;
+    }
+    else {
+        use base qw/XML::SAX::Base/;
+    }
+}
+
 # this space intentionally blank
 
 1;
 
 package Driver;
-use base qw(XML::SAX::Base);
+BEGIN {
+    if ($] < 5.6) {
+        use XML::SAX::Base;
+        use vars qw/@ISA/;
+        @ISA =  qw/XML::SAX::Base/;
+    }
+    else {
+        use base qw/XML::SAX::Base/;
+    }
+}
 
 sub parse {
     my $self = shift;

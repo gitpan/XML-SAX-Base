@@ -1,6 +1,5 @@
 use Test;
 BEGIN { plan tests => 1 }
-use XML::SAX::Base;
 
 my $sax_it = SAXIterator->new();
 my $driver = Driver->new(Handler => $sax_it);
@@ -10,8 +9,19 @@ my $retval  = $driver->parse();
 ok ($retval == 32);
 # end main
 
+1;
+
 package Driver;
-use base qw(XML::SAX::Base);
+BEGIN {
+    if ($] < 5.6) {
+        use XML::SAX::Base;
+        use vars qw/@ISA/;
+        @ISA =  qw/XML::SAX::Base/;
+    }
+    else {
+        use base qw/XML::SAX::Base/;
+    }
+}
 
 sub parse {
     my $self = shift;
@@ -49,6 +59,7 @@ sub parse {
     $self->SUPER::end_element;
     return $self->SUPER::end_document;
 }
+
 1;
 
 # basic single class SAX Handler

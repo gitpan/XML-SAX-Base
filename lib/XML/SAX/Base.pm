@@ -1,10 +1,5 @@
 package XML::SAX::Base;
 
-use strict;
-use vars qw($VERSION);
-
-$VERSION = '1.00';
-
 # version 0.10 - Kip Hampton <khampton@totalcinema.com>
 # version 0.13 - Robin Berjon <robin@knowscape.com>
 # version 0.15 - Kip Hampton <khampton@totalcinema.com>
@@ -16,6 +11,8 @@ $VERSION = '1.00';
 # version 0.24 - Robin Berjon <robin@knowscape.com>
 # version 0.25 - Kip Hampton <khampton@totalcinema.com>
 # version 1.00 - Kip Hampton <khampton@totalcinema.com>
+# version 1.01 - Kip Hampton <khampton@totalcinema.com>
+# version 1.02 - Robin Berjon <robin@knowscape.com>
 
 #-----------------------------------------------------#
 # STOP!!!!!
@@ -26,1407 +23,2076 @@ $VERSION = '1.00';
 # this one.
 #-----------------------------------------------------#
 
-package XML::SAX::Base;
-
 use strict;
 use vars qw($VERSION);
 use XML::SAX::Exception qw();
-$VERSION = '0.25';
+$VERSION = '1.02';
 
 sub notation_decl {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'notation_decl'}) {
         $self->{Methods}->{'notation_decl'}->(@_);
     }
-    elsif (defined $self->{'DTDHandler'} and $method = $self->{'DTDHandler'}->can('notation_decl') ) {
-        $self->{Methods}->{'notation_decl'} = sub { $self->{DTDHandler}->notation_decl(@_) };
-        $method->($self->{DTDHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('notation_decl') ) {
-        $self->{Methods}->{'notation_decl'} = sub { $self->{Handler}->notation_decl(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DTDHandler'} and $self->{'DTDHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DTDHandler'}->notation_decl(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'notation_decl'} = sub { $self->{'DTDHandler'}->notation_decl(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->notation_decl(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $method = $callbacks->{'DTDHandler'}->can('notation_decl') ) {
+            $self->{Methods}->{'notation_decl'} = sub { $method->($callbacks->{'DTDHandler'}, @_) };
+            $method->($callbacks->{DTDHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('notation_decl') ) {
+            $self->{Methods}->{'notation_decl'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $callbacks->{'DTDHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DTDHandler'}->notation_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'notation_decl'} = sub { $callbacks->{'DTDHandler'}->notation_decl(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->notation_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'notation_decl'} = sub { $callbacks->{'Handler'}->notation_decl(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'notation_decl'} = sub { $self->{'Handler'}->notation_decl(@_) };
+            $self->{Methods}->{'notation_decl'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'notation_decl'} = sub { $self->no_op };
-   }
 
 }
 
 sub resolve_entity {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'resolve_entity'}) {
         $self->{Methods}->{'resolve_entity'}->(@_);
     }
-    elsif (defined $self->{'EntityResolver'} and $method = $self->{'EntityResolver'}->can('resolve_entity') ) {
-        $self->{Methods}->{'resolve_entity'} = sub { $self->{EntityResolver}->resolve_entity(@_) };
-        $method->($self->{EntityResolver}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('resolve_entity') ) {
-        $self->{Methods}->{'resolve_entity'} = sub { $self->{Handler}->resolve_entity(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'EntityResolver'} and $self->{'EntityResolver'}->can('AUTOLOAD') ) {
-        eval { $self->{'EntityResolver'}->resolve_entity(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'resolve_entity'} = sub { $self->{'EntityResolver'}->resolve_entity(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->resolve_entity(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'EntityResolver'} and $method = $callbacks->{'EntityResolver'}->can('resolve_entity') ) {
+            $self->{Methods}->{'resolve_entity'} = sub { $method->($callbacks->{'EntityResolver'}, @_) };
+            $method->($callbacks->{EntityResolver}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('resolve_entity') ) {
+            $self->{Methods}->{'resolve_entity'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'EntityResolver'} and $callbacks->{'EntityResolver'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'EntityResolver'}->resolve_entity(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'resolve_entity'} = sub { $callbacks->{'EntityResolver'}->resolve_entity(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->resolve_entity(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'resolve_entity'} = sub { $callbacks->{'Handler'}->resolve_entity(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'resolve_entity'} = sub { $self->{'Handler'}->resolve_entity(@_) };
+            $self->{Methods}->{'resolve_entity'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'resolve_entity'} = sub { $self->no_op };
-   }
 
 }
 
 sub start_cdata {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'start_cdata'}) {
         $self->{Methods}->{'start_cdata'}->(@_);
     }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('start_cdata') ) {
-        $self->{Methods}->{'start_cdata'} = sub { $self->{DocumentHandler}->start_cdata(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'LexicalHandler'} and $method = $self->{'LexicalHandler'}->can('start_cdata') ) {
-        $self->{Methods}->{'start_cdata'} = sub { $self->{LexicalHandler}->start_cdata(@_) };
-        $method->($self->{LexicalHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('start_cdata') ) {
-        $self->{Methods}->{'start_cdata'} = sub { $self->{Handler}->start_cdata(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->start_cdata(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'start_cdata'} = sub { $self->{'DocumentHandler'}->start_cdata(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'LexicalHandler'} and $self->{'LexicalHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'LexicalHandler'}->start_cdata(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('start_cdata') ) {
+            $self->{Methods}->{'start_cdata'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $method = $callbacks->{'LexicalHandler'}->can('start_cdata') ) {
+            $self->{Methods}->{'start_cdata'} = sub { $method->($callbacks->{'LexicalHandler'}, @_) };
+            $method->($callbacks->{LexicalHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('start_cdata') ) {
+            $self->{Methods}->{'start_cdata'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->start_cdata(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_cdata'} = sub { $callbacks->{'DocumentHandler'}->start_cdata(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $callbacks->{'LexicalHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'LexicalHandler'}->start_cdata(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_cdata'} = sub { $callbacks->{'LexicalHandler'}->start_cdata(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->start_cdata(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_cdata'} = sub { $callbacks->{'Handler'}->start_cdata(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'start_cdata'} = sub { $self->{'LexicalHandler'}->start_cdata(@_) };
+            $self->{Methods}->{'start_cdata'} = sub { $self->no_op };
         }
     }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->start_cdata(@_) };
-        if ($@) {
-            die $@;
-        }
-        else {
-            $self->{Methods}->{'start_cdata'} = sub { $self->{'Handler'}->start_cdata(@_) };
-        }
-    }
-   else {
-       $self->{Methods}->{'start_cdata'} = sub { $self->no_op };
-   }
 
 }
 
 sub set_document_locator {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'set_document_locator'}) {
         $self->{Methods}->{'set_document_locator'}->(@_);
     }
-    elsif (defined $self->{'ContentHandler'} and $method = $self->{'ContentHandler'}->can('set_document_locator') ) {
-        $self->{Methods}->{'set_document_locator'} = sub { $self->{ContentHandler}->set_document_locator(@_) };
-        $method->($self->{ContentHandler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('set_document_locator') ) {
-        $self->{Methods}->{'set_document_locator'} = sub { $self->{DocumentHandler}->set_document_locator(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('set_document_locator') ) {
-        $self->{Methods}->{'set_document_locator'} = sub { $self->{Handler}->set_document_locator(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ContentHandler'} and $self->{'ContentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ContentHandler'}->set_document_locator(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'set_document_locator'} = sub { $self->{'ContentHandler'}->set_document_locator(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->set_document_locator(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $method = $callbacks->{'ContentHandler'}->can('set_document_locator') ) {
+            $self->{Methods}->{'set_document_locator'} = sub { $method->($callbacks->{'ContentHandler'}, @_) };
+            $method->($callbacks->{ContentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('set_document_locator') ) {
+            $self->{Methods}->{'set_document_locator'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('set_document_locator') ) {
+            $self->{Methods}->{'set_document_locator'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $callbacks->{'ContentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ContentHandler'}->set_document_locator(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'set_document_locator'} = sub { $callbacks->{'ContentHandler'}->set_document_locator(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->set_document_locator(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'set_document_locator'} = sub { $callbacks->{'DocumentHandler'}->set_document_locator(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->set_document_locator(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'set_document_locator'} = sub { $callbacks->{'Handler'}->set_document_locator(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'set_document_locator'} = sub { $self->{'DocumentHandler'}->set_document_locator(@_) };
+            $self->{Methods}->{'set_document_locator'} = sub { $self->no_op };
         }
     }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->set_document_locator(@_) };
-        if ($@) {
-            die $@;
-        }
-        else {
-            $self->{Methods}->{'set_document_locator'} = sub { $self->{'Handler'}->set_document_locator(@_) };
-        }
-    }
-   else {
-       $self->{Methods}->{'set_document_locator'} = sub { $self->no_op };
-   }
 
 }
 
 sub xml_decl {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'xml_decl'}) {
         $self->{Methods}->{'xml_decl'}->(@_);
     }
-    elsif (defined $self->{'DTDHandler'} and $method = $self->{'DTDHandler'}->can('xml_decl') ) {
-        $self->{Methods}->{'xml_decl'} = sub { $self->{DTDHandler}->xml_decl(@_) };
-        $method->($self->{DTDHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('xml_decl') ) {
-        $self->{Methods}->{'xml_decl'} = sub { $self->{Handler}->xml_decl(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DTDHandler'} and $self->{'DTDHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DTDHandler'}->xml_decl(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'xml_decl'} = sub { $self->{'DTDHandler'}->xml_decl(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->xml_decl(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $method = $callbacks->{'DTDHandler'}->can('xml_decl') ) {
+            $self->{Methods}->{'xml_decl'} = sub { $method->($callbacks->{'DTDHandler'}, @_) };
+            $method->($callbacks->{DTDHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('xml_decl') ) {
+            $self->{Methods}->{'xml_decl'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $callbacks->{'DTDHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DTDHandler'}->xml_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'xml_decl'} = sub { $callbacks->{'DTDHandler'}->xml_decl(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->xml_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'xml_decl'} = sub { $callbacks->{'Handler'}->xml_decl(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'xml_decl'} = sub { $self->{'Handler'}->xml_decl(@_) };
+            $self->{Methods}->{'xml_decl'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'xml_decl'} = sub { $self->no_op };
-   }
 
 }
 
 sub processing_instruction {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'processing_instruction'}) {
         $self->{Methods}->{'processing_instruction'}->(@_);
     }
-    elsif (defined $self->{'ContentHandler'} and $method = $self->{'ContentHandler'}->can('processing_instruction') ) {
-        $self->{Methods}->{'processing_instruction'} = sub { $self->{ContentHandler}->processing_instruction(@_) };
-        $method->($self->{ContentHandler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('processing_instruction') ) {
-        $self->{Methods}->{'processing_instruction'} = sub { $self->{DocumentHandler}->processing_instruction(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('processing_instruction') ) {
-        $self->{Methods}->{'processing_instruction'} = sub { $self->{Handler}->processing_instruction(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ContentHandler'} and $self->{'ContentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ContentHandler'}->processing_instruction(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'processing_instruction'} = sub { $self->{'ContentHandler'}->processing_instruction(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->processing_instruction(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $method = $callbacks->{'ContentHandler'}->can('processing_instruction') ) {
+            $self->{Methods}->{'processing_instruction'} = sub { $method->($callbacks->{'ContentHandler'}, @_) };
+            $method->($callbacks->{ContentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('processing_instruction') ) {
+            $self->{Methods}->{'processing_instruction'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('processing_instruction') ) {
+            $self->{Methods}->{'processing_instruction'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $callbacks->{'ContentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ContentHandler'}->processing_instruction(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'processing_instruction'} = sub { $callbacks->{'ContentHandler'}->processing_instruction(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->processing_instruction(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'processing_instruction'} = sub { $callbacks->{'DocumentHandler'}->processing_instruction(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->processing_instruction(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'processing_instruction'} = sub { $callbacks->{'Handler'}->processing_instruction(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'processing_instruction'} = sub { $self->{'DocumentHandler'}->processing_instruction(@_) };
+            $self->{Methods}->{'processing_instruction'} = sub { $self->no_op };
         }
     }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->processing_instruction(@_) };
-        if ($@) {
-            die $@;
-        }
-        else {
-            $self->{Methods}->{'processing_instruction'} = sub { $self->{'Handler'}->processing_instruction(@_) };
-        }
-    }
-   else {
-       $self->{Methods}->{'processing_instruction'} = sub { $self->no_op };
-   }
 
 }
 
 sub start_prefix_mapping {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'start_prefix_mapping'}) {
         $self->{Methods}->{'start_prefix_mapping'}->(@_);
     }
-    elsif (defined $self->{'ContentHandler'} and $method = $self->{'ContentHandler'}->can('start_prefix_mapping') ) {
-        $self->{Methods}->{'start_prefix_mapping'} = sub { $self->{ContentHandler}->start_prefix_mapping(@_) };
-        $method->($self->{ContentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('start_prefix_mapping') ) {
-        $self->{Methods}->{'start_prefix_mapping'} = sub { $self->{Handler}->start_prefix_mapping(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ContentHandler'} and $self->{'ContentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ContentHandler'}->start_prefix_mapping(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'start_prefix_mapping'} = sub { $self->{'ContentHandler'}->start_prefix_mapping(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->start_prefix_mapping(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $method = $callbacks->{'ContentHandler'}->can('start_prefix_mapping') ) {
+            $self->{Methods}->{'start_prefix_mapping'} = sub { $method->($callbacks->{'ContentHandler'}, @_) };
+            $method->($callbacks->{ContentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('start_prefix_mapping') ) {
+            $self->{Methods}->{'start_prefix_mapping'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $callbacks->{'ContentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ContentHandler'}->start_prefix_mapping(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_prefix_mapping'} = sub { $callbacks->{'ContentHandler'}->start_prefix_mapping(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->start_prefix_mapping(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_prefix_mapping'} = sub { $callbacks->{'Handler'}->start_prefix_mapping(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'start_prefix_mapping'} = sub { $self->{'Handler'}->start_prefix_mapping(@_) };
+            $self->{Methods}->{'start_prefix_mapping'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'start_prefix_mapping'} = sub { $self->no_op };
-   }
 
 }
 
 sub entity_reference {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'entity_reference'}) {
         $self->{Methods}->{'entity_reference'}->(@_);
     }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('entity_reference') ) {
-        $self->{Methods}->{'entity_reference'} = sub { $self->{DocumentHandler}->entity_reference(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('entity_reference') ) {
-        $self->{Methods}->{'entity_reference'} = sub { $self->{Handler}->entity_reference(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->entity_reference(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'entity_reference'} = sub { $self->{'DocumentHandler'}->entity_reference(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->entity_reference(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('entity_reference') ) {
+            $self->{Methods}->{'entity_reference'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('entity_reference') ) {
+            $self->{Methods}->{'entity_reference'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->entity_reference(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'entity_reference'} = sub { $callbacks->{'DocumentHandler'}->entity_reference(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->entity_reference(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'entity_reference'} = sub { $callbacks->{'Handler'}->entity_reference(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'entity_reference'} = sub { $self->{'Handler'}->entity_reference(@_) };
+            $self->{Methods}->{'entity_reference'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'entity_reference'} = sub { $self->no_op };
-   }
 
 }
 
 sub attlist_decl {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'attlist_decl'}) {
         $self->{Methods}->{'attlist_decl'}->(@_);
     }
-    elsif (defined $self->{'DTDHandler'} and $method = $self->{'DTDHandler'}->can('attlist_decl') ) {
-        $self->{Methods}->{'attlist_decl'} = sub { $self->{DTDHandler}->attlist_decl(@_) };
-        $method->($self->{DTDHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('attlist_decl') ) {
-        $self->{Methods}->{'attlist_decl'} = sub { $self->{Handler}->attlist_decl(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DTDHandler'} and $self->{'DTDHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DTDHandler'}->attlist_decl(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'attlist_decl'} = sub { $self->{'DTDHandler'}->attlist_decl(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->attlist_decl(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $method = $callbacks->{'DTDHandler'}->can('attlist_decl') ) {
+            $self->{Methods}->{'attlist_decl'} = sub { $method->($callbacks->{'DTDHandler'}, @_) };
+            $method->($callbacks->{DTDHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('attlist_decl') ) {
+            $self->{Methods}->{'attlist_decl'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $callbacks->{'DTDHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DTDHandler'}->attlist_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'attlist_decl'} = sub { $callbacks->{'DTDHandler'}->attlist_decl(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->attlist_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'attlist_decl'} = sub { $callbacks->{'Handler'}->attlist_decl(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'attlist_decl'} = sub { $self->{'Handler'}->attlist_decl(@_) };
+            $self->{Methods}->{'attlist_decl'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'attlist_decl'} = sub { $self->no_op };
-   }
 
 }
 
 sub error {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'error'}) {
         $self->{Methods}->{'error'}->(@_);
     }
-    elsif (defined $self->{'ErrorHandler'} and $method = $self->{'ErrorHandler'}->can('error') ) {
-        $self->{Methods}->{'error'} = sub { $self->{ErrorHandler}->error(@_) };
-        $method->($self->{ErrorHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('error') ) {
-        $self->{Methods}->{'error'} = sub { $self->{Handler}->error(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ErrorHandler'} and $self->{'ErrorHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ErrorHandler'}->error(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'error'} = sub { $self->{'ErrorHandler'}->error(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->error(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ErrorHandler'} and $method = $callbacks->{'ErrorHandler'}->can('error') ) {
+            $self->{Methods}->{'error'} = sub { $method->($callbacks->{'ErrorHandler'}, @_) };
+            $method->($callbacks->{ErrorHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('error') ) {
+            $self->{Methods}->{'error'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ErrorHandler'} and $callbacks->{'ErrorHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ErrorHandler'}->error(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'error'} = sub { $callbacks->{'ErrorHandler'}->error(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->error(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'error'} = sub { $callbacks->{'Handler'}->error(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'error'} = sub { $self->{'Handler'}->error(@_) };
+            $self->{Methods}->{'error'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'error'} = sub { $self->no_op };
-   }
 
 }
 
 sub unparsed_entity_decl {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'unparsed_entity_decl'}) {
         $self->{Methods}->{'unparsed_entity_decl'}->(@_);
     }
-    elsif (defined $self->{'DTDHandler'} and $method = $self->{'DTDHandler'}->can('unparsed_entity_decl') ) {
-        $self->{Methods}->{'unparsed_entity_decl'} = sub { $self->{DTDHandler}->unparsed_entity_decl(@_) };
-        $method->($self->{DTDHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('unparsed_entity_decl') ) {
-        $self->{Methods}->{'unparsed_entity_decl'} = sub { $self->{Handler}->unparsed_entity_decl(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DTDHandler'} and $self->{'DTDHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DTDHandler'}->unparsed_entity_decl(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'unparsed_entity_decl'} = sub { $self->{'DTDHandler'}->unparsed_entity_decl(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->unparsed_entity_decl(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $method = $callbacks->{'DTDHandler'}->can('unparsed_entity_decl') ) {
+            $self->{Methods}->{'unparsed_entity_decl'} = sub { $method->($callbacks->{'DTDHandler'}, @_) };
+            $method->($callbacks->{DTDHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('unparsed_entity_decl') ) {
+            $self->{Methods}->{'unparsed_entity_decl'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $callbacks->{'DTDHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DTDHandler'}->unparsed_entity_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'unparsed_entity_decl'} = sub { $callbacks->{'DTDHandler'}->unparsed_entity_decl(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->unparsed_entity_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'unparsed_entity_decl'} = sub { $callbacks->{'Handler'}->unparsed_entity_decl(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'unparsed_entity_decl'} = sub { $self->{'Handler'}->unparsed_entity_decl(@_) };
+            $self->{Methods}->{'unparsed_entity_decl'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'unparsed_entity_decl'} = sub { $self->no_op };
-   }
 
 }
 
 sub end_entity {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'end_entity'}) {
         $self->{Methods}->{'end_entity'}->(@_);
     }
-    elsif (defined $self->{'LexicalHandler'} and $method = $self->{'LexicalHandler'}->can('end_entity') ) {
-        $self->{Methods}->{'end_entity'} = sub { $self->{LexicalHandler}->end_entity(@_) };
-        $method->($self->{LexicalHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('end_entity') ) {
-        $self->{Methods}->{'end_entity'} = sub { $self->{Handler}->end_entity(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'LexicalHandler'} and $self->{'LexicalHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'LexicalHandler'}->end_entity(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'end_entity'} = sub { $self->{'LexicalHandler'}->end_entity(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->end_entity(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $method = $callbacks->{'LexicalHandler'}->can('end_entity') ) {
+            $self->{Methods}->{'end_entity'} = sub { $method->($callbacks->{'LexicalHandler'}, @_) };
+            $method->($callbacks->{LexicalHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('end_entity') ) {
+            $self->{Methods}->{'end_entity'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $callbacks->{'LexicalHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'LexicalHandler'}->end_entity(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_entity'} = sub { $callbacks->{'LexicalHandler'}->end_entity(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->end_entity(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_entity'} = sub { $callbacks->{'Handler'}->end_entity(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'end_entity'} = sub { $self->{'Handler'}->end_entity(@_) };
+            $self->{Methods}->{'end_entity'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'end_entity'} = sub { $self->no_op };
-   }
 
 }
 
 sub end_element {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'end_element'}) {
         $self->{Methods}->{'end_element'}->(@_);
     }
-    elsif (defined $self->{'ContentHandler'} and $method = $self->{'ContentHandler'}->can('end_element') ) {
-        $self->{Methods}->{'end_element'} = sub { $self->{ContentHandler}->end_element(@_) };
-        $method->($self->{ContentHandler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('end_element') ) {
-        $self->{Methods}->{'end_element'} = sub { $self->{DocumentHandler}->end_element(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('end_element') ) {
-        $self->{Methods}->{'end_element'} = sub { $self->{Handler}->end_element(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ContentHandler'} and $self->{'ContentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ContentHandler'}->end_element(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'end_element'} = sub { $self->{'ContentHandler'}->end_element(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->end_element(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $method = $callbacks->{'ContentHandler'}->can('end_element') ) {
+            $self->{Methods}->{'end_element'} = sub { $method->($callbacks->{'ContentHandler'}, @_) };
+            $method->($callbacks->{ContentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('end_element') ) {
+            $self->{Methods}->{'end_element'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('end_element') ) {
+            $self->{Methods}->{'end_element'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $callbacks->{'ContentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ContentHandler'}->end_element(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_element'} = sub { $callbacks->{'ContentHandler'}->end_element(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->end_element(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_element'} = sub { $callbacks->{'DocumentHandler'}->end_element(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->end_element(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_element'} = sub { $callbacks->{'Handler'}->end_element(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'end_element'} = sub { $self->{'DocumentHandler'}->end_element(@_) };
+            $self->{Methods}->{'end_element'} = sub { $self->no_op };
         }
     }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->end_element(@_) };
-        if ($@) {
-            die $@;
-        }
-        else {
-            $self->{Methods}->{'end_element'} = sub { $self->{'Handler'}->end_element(@_) };
-        }
-    }
-   else {
-       $self->{Methods}->{'end_element'} = sub { $self->no_op };
-   }
 
 }
 
 sub comment {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'comment'}) {
         $self->{Methods}->{'comment'}->(@_);
     }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('comment') ) {
-        $self->{Methods}->{'comment'} = sub { $self->{DocumentHandler}->comment(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'LexicalHandler'} and $method = $self->{'LexicalHandler'}->can('comment') ) {
-        $self->{Methods}->{'comment'} = sub { $self->{LexicalHandler}->comment(@_) };
-        $method->($self->{LexicalHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('comment') ) {
-        $self->{Methods}->{'comment'} = sub { $self->{Handler}->comment(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->comment(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'comment'} = sub { $self->{'DocumentHandler'}->comment(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'LexicalHandler'} and $self->{'LexicalHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'LexicalHandler'}->comment(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('comment') ) {
+            $self->{Methods}->{'comment'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $method = $callbacks->{'LexicalHandler'}->can('comment') ) {
+            $self->{Methods}->{'comment'} = sub { $method->($callbacks->{'LexicalHandler'}, @_) };
+            $method->($callbacks->{LexicalHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('comment') ) {
+            $self->{Methods}->{'comment'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->comment(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'comment'} = sub { $callbacks->{'DocumentHandler'}->comment(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $callbacks->{'LexicalHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'LexicalHandler'}->comment(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'comment'} = sub { $callbacks->{'LexicalHandler'}->comment(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->comment(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'comment'} = sub { $callbacks->{'Handler'}->comment(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'comment'} = sub { $self->{'LexicalHandler'}->comment(@_) };
+            $self->{Methods}->{'comment'} = sub { $self->no_op };
         }
     }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->comment(@_) };
-        if ($@) {
-            die $@;
-        }
-        else {
-            $self->{Methods}->{'comment'} = sub { $self->{'Handler'}->comment(@_) };
-        }
-    }
-   else {
-       $self->{Methods}->{'comment'} = sub { $self->no_op };
-   }
 
 }
 
 sub element_decl {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'element_decl'}) {
         $self->{Methods}->{'element_decl'}->(@_);
     }
-    elsif (defined $self->{'DeclHandler'} and $method = $self->{'DeclHandler'}->can('element_decl') ) {
-        $self->{Methods}->{'element_decl'} = sub { $self->{DeclHandler}->element_decl(@_) };
-        $method->($self->{DeclHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('element_decl') ) {
-        $self->{Methods}->{'element_decl'} = sub { $self->{Handler}->element_decl(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DeclHandler'} and $self->{'DeclHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DeclHandler'}->element_decl(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'element_decl'} = sub { $self->{'DeclHandler'}->element_decl(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->element_decl(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DeclHandler'} and $method = $callbacks->{'DeclHandler'}->can('element_decl') ) {
+            $self->{Methods}->{'element_decl'} = sub { $method->($callbacks->{'DeclHandler'}, @_) };
+            $method->($callbacks->{DeclHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('element_decl') ) {
+            $self->{Methods}->{'element_decl'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DeclHandler'} and $callbacks->{'DeclHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DeclHandler'}->element_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'element_decl'} = sub { $callbacks->{'DeclHandler'}->element_decl(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->element_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'element_decl'} = sub { $callbacks->{'Handler'}->element_decl(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'element_decl'} = sub { $self->{'Handler'}->element_decl(@_) };
+            $self->{Methods}->{'element_decl'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'element_decl'} = sub { $self->no_op };
-   }
 
 }
 
 sub attribute_decl {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'attribute_decl'}) {
         $self->{Methods}->{'attribute_decl'}->(@_);
     }
-    elsif (defined $self->{'DeclHandler'} and $method = $self->{'DeclHandler'}->can('attribute_decl') ) {
-        $self->{Methods}->{'attribute_decl'} = sub { $self->{DeclHandler}->attribute_decl(@_) };
-        $method->($self->{DeclHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('attribute_decl') ) {
-        $self->{Methods}->{'attribute_decl'} = sub { $self->{Handler}->attribute_decl(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DeclHandler'} and $self->{'DeclHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DeclHandler'}->attribute_decl(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'attribute_decl'} = sub { $self->{'DeclHandler'}->attribute_decl(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->attribute_decl(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DeclHandler'} and $method = $callbacks->{'DeclHandler'}->can('attribute_decl') ) {
+            $self->{Methods}->{'attribute_decl'} = sub { $method->($callbacks->{'DeclHandler'}, @_) };
+            $method->($callbacks->{DeclHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('attribute_decl') ) {
+            $self->{Methods}->{'attribute_decl'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DeclHandler'} and $callbacks->{'DeclHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DeclHandler'}->attribute_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'attribute_decl'} = sub { $callbacks->{'DeclHandler'}->attribute_decl(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->attribute_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'attribute_decl'} = sub { $callbacks->{'Handler'}->attribute_decl(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'attribute_decl'} = sub { $self->{'Handler'}->attribute_decl(@_) };
+            $self->{Methods}->{'attribute_decl'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'attribute_decl'} = sub { $self->no_op };
-   }
 
 }
 
 sub fatal_error {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'fatal_error'}) {
         $self->{Methods}->{'fatal_error'}->(@_);
     }
-    elsif (defined $self->{'ErrorHandler'} and $method = $self->{'ErrorHandler'}->can('fatal_error') ) {
-        $self->{Methods}->{'fatal_error'} = sub { $self->{ErrorHandler}->fatal_error(@_) };
-        $method->($self->{ErrorHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('fatal_error') ) {
-        $self->{Methods}->{'fatal_error'} = sub { $self->{Handler}->fatal_error(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ErrorHandler'} and $self->{'ErrorHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ErrorHandler'}->fatal_error(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'fatal_error'} = sub { $self->{'ErrorHandler'}->fatal_error(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->fatal_error(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ErrorHandler'} and $method = $callbacks->{'ErrorHandler'}->can('fatal_error') ) {
+            $self->{Methods}->{'fatal_error'} = sub { $method->($callbacks->{'ErrorHandler'}, @_) };
+            $method->($callbacks->{ErrorHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('fatal_error') ) {
+            $self->{Methods}->{'fatal_error'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ErrorHandler'} and $callbacks->{'ErrorHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ErrorHandler'}->fatal_error(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'fatal_error'} = sub { $callbacks->{'ErrorHandler'}->fatal_error(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->fatal_error(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'fatal_error'} = sub { $callbacks->{'Handler'}->fatal_error(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'fatal_error'} = sub { $self->{'Handler'}->fatal_error(@_) };
+            $self->{Methods}->{'fatal_error'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'fatal_error'} = sub { $self->no_op };
-   }
 
 }
 
 sub start_document {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'start_document'}) {
         $self->{Methods}->{'start_document'}->(@_);
     }
-    elsif (defined $self->{'ContentHandler'} and $method = $self->{'ContentHandler'}->can('start_document') ) {
-        $self->{Methods}->{'start_document'} = sub { $self->{ContentHandler}->start_document(@_) };
-        $method->($self->{ContentHandler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('start_document') ) {
-        $self->{Methods}->{'start_document'} = sub { $self->{DocumentHandler}->start_document(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('start_document') ) {
-        $self->{Methods}->{'start_document'} = sub { $self->{Handler}->start_document(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ContentHandler'} and $self->{'ContentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ContentHandler'}->start_document(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'start_document'} = sub { $self->{'ContentHandler'}->start_document(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->start_document(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $method = $callbacks->{'ContentHandler'}->can('start_document') ) {
+            $self->{Methods}->{'start_document'} = sub { $method->($callbacks->{'ContentHandler'}, @_) };
+            $method->($callbacks->{ContentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('start_document') ) {
+            $self->{Methods}->{'start_document'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('start_document') ) {
+            $self->{Methods}->{'start_document'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $callbacks->{'ContentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ContentHandler'}->start_document(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_document'} = sub { $callbacks->{'ContentHandler'}->start_document(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->start_document(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_document'} = sub { $callbacks->{'DocumentHandler'}->start_document(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->start_document(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_document'} = sub { $callbacks->{'Handler'}->start_document(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'start_document'} = sub { $self->{'DocumentHandler'}->start_document(@_) };
+            $self->{Methods}->{'start_document'} = sub { $self->no_op };
         }
     }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->start_document(@_) };
-        if ($@) {
-            die $@;
-        }
-        else {
-            $self->{Methods}->{'start_document'} = sub { $self->{'Handler'}->start_document(@_) };
-        }
-    }
-   else {
-       $self->{Methods}->{'start_document'} = sub { $self->no_op };
-   }
 
 }
 
 sub external_entity_decl {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'external_entity_decl'}) {
         $self->{Methods}->{'external_entity_decl'}->(@_);
     }
-    elsif (defined $self->{'DeclHandler'} and $method = $self->{'DeclHandler'}->can('external_entity_decl') ) {
-        $self->{Methods}->{'external_entity_decl'} = sub { $self->{DeclHandler}->external_entity_decl(@_) };
-        $method->($self->{DeclHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('external_entity_decl') ) {
-        $self->{Methods}->{'external_entity_decl'} = sub { $self->{Handler}->external_entity_decl(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DeclHandler'} and $self->{'DeclHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DeclHandler'}->external_entity_decl(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'external_entity_decl'} = sub { $self->{'DeclHandler'}->external_entity_decl(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->external_entity_decl(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DeclHandler'} and $method = $callbacks->{'DeclHandler'}->can('external_entity_decl') ) {
+            $self->{Methods}->{'external_entity_decl'} = sub { $method->($callbacks->{'DeclHandler'}, @_) };
+            $method->($callbacks->{DeclHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('external_entity_decl') ) {
+            $self->{Methods}->{'external_entity_decl'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DeclHandler'} and $callbacks->{'DeclHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DeclHandler'}->external_entity_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'external_entity_decl'} = sub { $callbacks->{'DeclHandler'}->external_entity_decl(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->external_entity_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'external_entity_decl'} = sub { $callbacks->{'Handler'}->external_entity_decl(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'external_entity_decl'} = sub { $self->{'Handler'}->external_entity_decl(@_) };
+            $self->{Methods}->{'external_entity_decl'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'external_entity_decl'} = sub { $self->no_op };
-   }
 
 }
 
 sub warning {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'warning'}) {
         $self->{Methods}->{'warning'}->(@_);
     }
-    elsif (defined $self->{'ErrorHandler'} and $method = $self->{'ErrorHandler'}->can('warning') ) {
-        $self->{Methods}->{'warning'} = sub { $self->{ErrorHandler}->warning(@_) };
-        $method->($self->{ErrorHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('warning') ) {
-        $self->{Methods}->{'warning'} = sub { $self->{Handler}->warning(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ErrorHandler'} and $self->{'ErrorHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ErrorHandler'}->warning(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'warning'} = sub { $self->{'ErrorHandler'}->warning(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->warning(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ErrorHandler'} and $method = $callbacks->{'ErrorHandler'}->can('warning') ) {
+            $self->{Methods}->{'warning'} = sub { $method->($callbacks->{'ErrorHandler'}, @_) };
+            $method->($callbacks->{ErrorHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('warning') ) {
+            $self->{Methods}->{'warning'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ErrorHandler'} and $callbacks->{'ErrorHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ErrorHandler'}->warning(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'warning'} = sub { $callbacks->{'ErrorHandler'}->warning(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->warning(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'warning'} = sub { $callbacks->{'Handler'}->warning(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'warning'} = sub { $self->{'Handler'}->warning(@_) };
+            $self->{Methods}->{'warning'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'warning'} = sub { $self->no_op };
-   }
 
 }
 
 sub doctype_decl {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'doctype_decl'}) {
         $self->{Methods}->{'doctype_decl'}->(@_);
     }
-    elsif (defined $self->{'DTDHandler'} and $method = $self->{'DTDHandler'}->can('doctype_decl') ) {
-        $self->{Methods}->{'doctype_decl'} = sub { $self->{DTDHandler}->doctype_decl(@_) };
-        $method->($self->{DTDHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('doctype_decl') ) {
-        $self->{Methods}->{'doctype_decl'} = sub { $self->{Handler}->doctype_decl(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DTDHandler'} and $self->{'DTDHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DTDHandler'}->doctype_decl(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'doctype_decl'} = sub { $self->{'DTDHandler'}->doctype_decl(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->doctype_decl(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $method = $callbacks->{'DTDHandler'}->can('doctype_decl') ) {
+            $self->{Methods}->{'doctype_decl'} = sub { $method->($callbacks->{'DTDHandler'}, @_) };
+            $method->($callbacks->{DTDHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('doctype_decl') ) {
+            $self->{Methods}->{'doctype_decl'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $callbacks->{'DTDHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DTDHandler'}->doctype_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'doctype_decl'} = sub { $callbacks->{'DTDHandler'}->doctype_decl(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->doctype_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'doctype_decl'} = sub { $callbacks->{'Handler'}->doctype_decl(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'doctype_decl'} = sub { $self->{'Handler'}->doctype_decl(@_) };
+            $self->{Methods}->{'doctype_decl'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'doctype_decl'} = sub { $self->no_op };
-   }
 
 }
 
 sub entity_decl {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'entity_decl'}) {
         $self->{Methods}->{'entity_decl'}->(@_);
     }
-    elsif (defined $self->{'DTDHandler'} and $method = $self->{'DTDHandler'}->can('entity_decl') ) {
-        $self->{Methods}->{'entity_decl'} = sub { $self->{DTDHandler}->entity_decl(@_) };
-        $method->($self->{DTDHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('entity_decl') ) {
-        $self->{Methods}->{'entity_decl'} = sub { $self->{Handler}->entity_decl(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DTDHandler'} and $self->{'DTDHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DTDHandler'}->entity_decl(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'entity_decl'} = sub { $self->{'DTDHandler'}->entity_decl(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->entity_decl(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $method = $callbacks->{'DTDHandler'}->can('entity_decl') ) {
+            $self->{Methods}->{'entity_decl'} = sub { $method->($callbacks->{'DTDHandler'}, @_) };
+            $method->($callbacks->{DTDHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('entity_decl') ) {
+            $self->{Methods}->{'entity_decl'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DTDHandler'} and $callbacks->{'DTDHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DTDHandler'}->entity_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'entity_decl'} = sub { $callbacks->{'DTDHandler'}->entity_decl(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->entity_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'entity_decl'} = sub { $callbacks->{'Handler'}->entity_decl(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'entity_decl'} = sub { $self->{'Handler'}->entity_decl(@_) };
+            $self->{Methods}->{'entity_decl'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'entity_decl'} = sub { $self->no_op };
-   }
 
 }
 
 sub end_document {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'end_document'}) {
         $self->{Methods}->{'end_document'}->(@_);
     }
-    elsif (defined $self->{'ContentHandler'} and $method = $self->{'ContentHandler'}->can('end_document') ) {
-        $self->{Methods}->{'end_document'} = sub { $self->{ContentHandler}->end_document(@_) };
-        $method->($self->{ContentHandler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('end_document') ) {
-        $self->{Methods}->{'end_document'} = sub { $self->{DocumentHandler}->end_document(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('end_document') ) {
-        $self->{Methods}->{'end_document'} = sub { $self->{Handler}->end_document(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ContentHandler'} and $self->{'ContentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ContentHandler'}->end_document(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'end_document'} = sub { $self->{'ContentHandler'}->end_document(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->end_document(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $method = $callbacks->{'ContentHandler'}->can('end_document') ) {
+            $self->{Methods}->{'end_document'} = sub { $method->($callbacks->{'ContentHandler'}, @_) };
+            $method->($callbacks->{ContentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('end_document') ) {
+            $self->{Methods}->{'end_document'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('end_document') ) {
+            $self->{Methods}->{'end_document'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $callbacks->{'ContentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ContentHandler'}->end_document(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_document'} = sub { $callbacks->{'ContentHandler'}->end_document(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->end_document(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_document'} = sub { $callbacks->{'DocumentHandler'}->end_document(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->end_document(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_document'} = sub { $callbacks->{'Handler'}->end_document(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'end_document'} = sub { $self->{'DocumentHandler'}->end_document(@_) };
+            $self->{Methods}->{'end_document'} = sub { $self->no_op };
         }
     }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->end_document(@_) };
-        if ($@) {
-            die $@;
-        }
-        else {
-            $self->{Methods}->{'end_document'} = sub { $self->{'Handler'}->end_document(@_) };
-        }
-    }
-   else {
-       $self->{Methods}->{'end_document'} = sub { $self->no_op };
-   }
 
 }
 
 sub start_element {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'start_element'}) {
         $self->{Methods}->{'start_element'}->(@_);
     }
-    elsif (defined $self->{'ContentHandler'} and $method = $self->{'ContentHandler'}->can('start_element') ) {
-        $self->{Methods}->{'start_element'} = sub { $self->{ContentHandler}->start_element(@_) };
-        $method->($self->{ContentHandler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('start_element') ) {
-        $self->{Methods}->{'start_element'} = sub { $self->{DocumentHandler}->start_element(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('start_element') ) {
-        $self->{Methods}->{'start_element'} = sub { $self->{Handler}->start_element(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ContentHandler'} and $self->{'ContentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ContentHandler'}->start_element(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'start_element'} = sub { $self->{'ContentHandler'}->start_element(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->start_element(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $method = $callbacks->{'ContentHandler'}->can('start_element') ) {
+            $self->{Methods}->{'start_element'} = sub { $method->($callbacks->{'ContentHandler'}, @_) };
+            $method->($callbacks->{ContentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('start_element') ) {
+            $self->{Methods}->{'start_element'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('start_element') ) {
+            $self->{Methods}->{'start_element'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $callbacks->{'ContentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ContentHandler'}->start_element(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_element'} = sub { $callbacks->{'ContentHandler'}->start_element(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->start_element(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_element'} = sub { $callbacks->{'DocumentHandler'}->start_element(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->start_element(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_element'} = sub { $callbacks->{'Handler'}->start_element(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'start_element'} = sub { $self->{'DocumentHandler'}->start_element(@_) };
+            $self->{Methods}->{'start_element'} = sub { $self->no_op };
         }
     }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->start_element(@_) };
-        if ($@) {
-            die $@;
-        }
-        else {
-            $self->{Methods}->{'start_element'} = sub { $self->{'Handler'}->start_element(@_) };
-        }
-    }
-   else {
-       $self->{Methods}->{'start_element'} = sub { $self->no_op };
-   }
 
 }
 
 sub start_dtd {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'start_dtd'}) {
         $self->{Methods}->{'start_dtd'}->(@_);
     }
-    elsif (defined $self->{'LexicalHandler'} and $method = $self->{'LexicalHandler'}->can('start_dtd') ) {
-        $self->{Methods}->{'start_dtd'} = sub { $self->{LexicalHandler}->start_dtd(@_) };
-        $method->($self->{LexicalHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('start_dtd') ) {
-        $self->{Methods}->{'start_dtd'} = sub { $self->{Handler}->start_dtd(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'LexicalHandler'} and $self->{'LexicalHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'LexicalHandler'}->start_dtd(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'start_dtd'} = sub { $self->{'LexicalHandler'}->start_dtd(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->start_dtd(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $method = $callbacks->{'LexicalHandler'}->can('start_dtd') ) {
+            $self->{Methods}->{'start_dtd'} = sub { $method->($callbacks->{'LexicalHandler'}, @_) };
+            $method->($callbacks->{LexicalHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('start_dtd') ) {
+            $self->{Methods}->{'start_dtd'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $callbacks->{'LexicalHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'LexicalHandler'}->start_dtd(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_dtd'} = sub { $callbacks->{'LexicalHandler'}->start_dtd(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->start_dtd(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_dtd'} = sub { $callbacks->{'Handler'}->start_dtd(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'start_dtd'} = sub { $self->{'Handler'}->start_dtd(@_) };
+            $self->{Methods}->{'start_dtd'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'start_dtd'} = sub { $self->no_op };
-   }
 
 }
 
 sub end_prefix_mapping {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'end_prefix_mapping'}) {
         $self->{Methods}->{'end_prefix_mapping'}->(@_);
     }
-    elsif (defined $self->{'ContentHandler'} and $method = $self->{'ContentHandler'}->can('end_prefix_mapping') ) {
-        $self->{Methods}->{'end_prefix_mapping'} = sub { $self->{ContentHandler}->end_prefix_mapping(@_) };
-        $method->($self->{ContentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('end_prefix_mapping') ) {
-        $self->{Methods}->{'end_prefix_mapping'} = sub { $self->{Handler}->end_prefix_mapping(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ContentHandler'} and $self->{'ContentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ContentHandler'}->end_prefix_mapping(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'end_prefix_mapping'} = sub { $self->{'ContentHandler'}->end_prefix_mapping(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->end_prefix_mapping(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $method = $callbacks->{'ContentHandler'}->can('end_prefix_mapping') ) {
+            $self->{Methods}->{'end_prefix_mapping'} = sub { $method->($callbacks->{'ContentHandler'}, @_) };
+            $method->($callbacks->{ContentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('end_prefix_mapping') ) {
+            $self->{Methods}->{'end_prefix_mapping'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $callbacks->{'ContentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ContentHandler'}->end_prefix_mapping(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_prefix_mapping'} = sub { $callbacks->{'ContentHandler'}->end_prefix_mapping(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->end_prefix_mapping(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_prefix_mapping'} = sub { $callbacks->{'Handler'}->end_prefix_mapping(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'end_prefix_mapping'} = sub { $self->{'Handler'}->end_prefix_mapping(@_) };
+            $self->{Methods}->{'end_prefix_mapping'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'end_prefix_mapping'} = sub { $self->no_op };
-   }
 
 }
 
 sub end_dtd {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'end_dtd'}) {
         $self->{Methods}->{'end_dtd'}->(@_);
     }
-    elsif (defined $self->{'LexicalHandler'} and $method = $self->{'LexicalHandler'}->can('end_dtd') ) {
-        $self->{Methods}->{'end_dtd'} = sub { $self->{LexicalHandler}->end_dtd(@_) };
-        $method->($self->{LexicalHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('end_dtd') ) {
-        $self->{Methods}->{'end_dtd'} = sub { $self->{Handler}->end_dtd(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'LexicalHandler'} and $self->{'LexicalHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'LexicalHandler'}->end_dtd(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'end_dtd'} = sub { $self->{'LexicalHandler'}->end_dtd(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->end_dtd(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $method = $callbacks->{'LexicalHandler'}->can('end_dtd') ) {
+            $self->{Methods}->{'end_dtd'} = sub { $method->($callbacks->{'LexicalHandler'}, @_) };
+            $method->($callbacks->{LexicalHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('end_dtd') ) {
+            $self->{Methods}->{'end_dtd'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $callbacks->{'LexicalHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'LexicalHandler'}->end_dtd(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_dtd'} = sub { $callbacks->{'LexicalHandler'}->end_dtd(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->end_dtd(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_dtd'} = sub { $callbacks->{'Handler'}->end_dtd(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'end_dtd'} = sub { $self->{'Handler'}->end_dtd(@_) };
+            $self->{Methods}->{'end_dtd'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'end_dtd'} = sub { $self->no_op };
-   }
 
 }
 
 sub characters {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'characters'}) {
         $self->{Methods}->{'characters'}->(@_);
     }
-    elsif (defined $self->{'ContentHandler'} and $method = $self->{'ContentHandler'}->can('characters') ) {
-        $self->{Methods}->{'characters'} = sub { $self->{ContentHandler}->characters(@_) };
-        $method->($self->{ContentHandler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('characters') ) {
-        $self->{Methods}->{'characters'} = sub { $self->{DocumentHandler}->characters(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('characters') ) {
-        $self->{Methods}->{'characters'} = sub { $self->{Handler}->characters(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ContentHandler'} and $self->{'ContentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ContentHandler'}->characters(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'characters'} = sub { $self->{'ContentHandler'}->characters(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->characters(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $method = $callbacks->{'ContentHandler'}->can('characters') ) {
+            $self->{Methods}->{'characters'} = sub { $method->($callbacks->{'ContentHandler'}, @_) };
+            $method->($callbacks->{ContentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('characters') ) {
+            $self->{Methods}->{'characters'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('characters') ) {
+            $self->{Methods}->{'characters'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $callbacks->{'ContentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ContentHandler'}->characters(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'characters'} = sub { $callbacks->{'ContentHandler'}->characters(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->characters(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'characters'} = sub { $callbacks->{'DocumentHandler'}->characters(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->characters(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'characters'} = sub { $callbacks->{'Handler'}->characters(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'characters'} = sub { $self->{'DocumentHandler'}->characters(@_) };
+            $self->{Methods}->{'characters'} = sub { $self->no_op };
         }
     }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->characters(@_) };
-        if ($@) {
-            die $@;
-        }
-        else {
-            $self->{Methods}->{'characters'} = sub { $self->{'Handler'}->characters(@_) };
-        }
-    }
-   else {
-       $self->{Methods}->{'characters'} = sub { $self->no_op };
-   }
 
 }
 
 sub end_cdata {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'end_cdata'}) {
         $self->{Methods}->{'end_cdata'}->(@_);
     }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('end_cdata') ) {
-        $self->{Methods}->{'end_cdata'} = sub { $self->{DocumentHandler}->end_cdata(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'LexicalHandler'} and $method = $self->{'LexicalHandler'}->can('end_cdata') ) {
-        $self->{Methods}->{'end_cdata'} = sub { $self->{LexicalHandler}->end_cdata(@_) };
-        $method->($self->{LexicalHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('end_cdata') ) {
-        $self->{Methods}->{'end_cdata'} = sub { $self->{Handler}->end_cdata(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->end_cdata(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'end_cdata'} = sub { $self->{'DocumentHandler'}->end_cdata(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'LexicalHandler'} and $self->{'LexicalHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'LexicalHandler'}->end_cdata(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('end_cdata') ) {
+            $self->{Methods}->{'end_cdata'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $method = $callbacks->{'LexicalHandler'}->can('end_cdata') ) {
+            $self->{Methods}->{'end_cdata'} = sub { $method->($callbacks->{'LexicalHandler'}, @_) };
+            $method->($callbacks->{LexicalHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('end_cdata') ) {
+            $self->{Methods}->{'end_cdata'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->end_cdata(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_cdata'} = sub { $callbacks->{'DocumentHandler'}->end_cdata(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $callbacks->{'LexicalHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'LexicalHandler'}->end_cdata(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_cdata'} = sub { $callbacks->{'LexicalHandler'}->end_cdata(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->end_cdata(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'end_cdata'} = sub { $callbacks->{'Handler'}->end_cdata(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'end_cdata'} = sub { $self->{'LexicalHandler'}->end_cdata(@_) };
+            $self->{Methods}->{'end_cdata'} = sub { $self->no_op };
         }
     }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->end_cdata(@_) };
-        if ($@) {
-            die $@;
-        }
-        else {
-            $self->{Methods}->{'end_cdata'} = sub { $self->{'Handler'}->end_cdata(@_) };
-        }
-    }
-   else {
-       $self->{Methods}->{'end_cdata'} = sub { $self->no_op };
-   }
 
 }
 
 sub skipped_entity {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'skipped_entity'}) {
         $self->{Methods}->{'skipped_entity'}->(@_);
     }
-    elsif (defined $self->{'ContentHandler'} and $method = $self->{'ContentHandler'}->can('skipped_entity') ) {
-        $self->{Methods}->{'skipped_entity'} = sub { $self->{ContentHandler}->skipped_entity(@_) };
-        $method->($self->{ContentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('skipped_entity') ) {
-        $self->{Methods}->{'skipped_entity'} = sub { $self->{Handler}->skipped_entity(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ContentHandler'} and $self->{'ContentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ContentHandler'}->skipped_entity(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'skipped_entity'} = sub { $self->{'ContentHandler'}->skipped_entity(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->skipped_entity(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $method = $callbacks->{'ContentHandler'}->can('skipped_entity') ) {
+            $self->{Methods}->{'skipped_entity'} = sub { $method->($callbacks->{'ContentHandler'}, @_) };
+            $method->($callbacks->{ContentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('skipped_entity') ) {
+            $self->{Methods}->{'skipped_entity'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $callbacks->{'ContentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ContentHandler'}->skipped_entity(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'skipped_entity'} = sub { $callbacks->{'ContentHandler'}->skipped_entity(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->skipped_entity(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'skipped_entity'} = sub { $callbacks->{'Handler'}->skipped_entity(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'skipped_entity'} = sub { $self->{'Handler'}->skipped_entity(@_) };
+            $self->{Methods}->{'skipped_entity'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'skipped_entity'} = sub { $self->no_op };
-   }
 
 }
 
 sub ignorable_whitespace {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'ignorable_whitespace'}) {
         $self->{Methods}->{'ignorable_whitespace'}->(@_);
     }
-    elsif (defined $self->{'ContentHandler'} and $method = $self->{'ContentHandler'}->can('ignorable_whitespace') ) {
-        $self->{Methods}->{'ignorable_whitespace'} = sub { $self->{ContentHandler}->ignorable_whitespace(@_) };
-        $method->($self->{ContentHandler}, @_);
-    }
-    elsif (defined $self->{'DocumentHandler'} and $method = $self->{'DocumentHandler'}->can('ignorable_whitespace') ) {
-        $self->{Methods}->{'ignorable_whitespace'} = sub { $self->{DocumentHandler}->ignorable_whitespace(@_) };
-        $method->($self->{DocumentHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('ignorable_whitespace') ) {
-        $self->{Methods}->{'ignorable_whitespace'} = sub { $self->{Handler}->ignorable_whitespace(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'ContentHandler'} and $self->{'ContentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'ContentHandler'}->ignorable_whitespace(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'ignorable_whitespace'} = sub { $self->{'ContentHandler'}->ignorable_whitespace(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'DocumentHandler'} and $self->{'DocumentHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DocumentHandler'}->ignorable_whitespace(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $method = $callbacks->{'ContentHandler'}->can('ignorable_whitespace') ) {
+            $self->{Methods}->{'ignorable_whitespace'} = sub { $method->($callbacks->{'ContentHandler'}, @_) };
+            $method->($callbacks->{ContentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $method = $callbacks->{'DocumentHandler'}->can('ignorable_whitespace') ) {
+            $self->{Methods}->{'ignorable_whitespace'} = sub { $method->($callbacks->{'DocumentHandler'}, @_) };
+            $method->($callbacks->{DocumentHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('ignorable_whitespace') ) {
+            $self->{Methods}->{'ignorable_whitespace'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'ContentHandler'} and $callbacks->{'ContentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'ContentHandler'}->ignorable_whitespace(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'ignorable_whitespace'} = sub { $callbacks->{'ContentHandler'}->ignorable_whitespace(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'DocumentHandler'} and $callbacks->{'DocumentHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DocumentHandler'}->ignorable_whitespace(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'ignorable_whitespace'} = sub { $callbacks->{'DocumentHandler'}->ignorable_whitespace(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->ignorable_whitespace(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'ignorable_whitespace'} = sub { $callbacks->{'Handler'}->ignorable_whitespace(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'ignorable_whitespace'} = sub { $self->{'DocumentHandler'}->ignorable_whitespace(@_) };
+            $self->{Methods}->{'ignorable_whitespace'} = sub { $self->no_op };
         }
     }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->ignorable_whitespace(@_) };
-        if ($@) {
-            die $@;
-        }
-        else {
-            $self->{Methods}->{'ignorable_whitespace'} = sub { $self->{'Handler'}->ignorable_whitespace(@_) };
-        }
-    }
-   else {
-       $self->{Methods}->{'ignorable_whitespace'} = sub { $self->no_op };
-   }
 
 }
 
 sub internal_entity_decl {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'internal_entity_decl'}) {
         $self->{Methods}->{'internal_entity_decl'}->(@_);
     }
-    elsif (defined $self->{'DeclHandler'} and $method = $self->{'DeclHandler'}->can('internal_entity_decl') ) {
-        $self->{Methods}->{'internal_entity_decl'} = sub { $self->{DeclHandler}->internal_entity_decl(@_) };
-        $method->($self->{DeclHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('internal_entity_decl') ) {
-        $self->{Methods}->{'internal_entity_decl'} = sub { $self->{Handler}->internal_entity_decl(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'DeclHandler'} and $self->{'DeclHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'DeclHandler'}->internal_entity_decl(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'internal_entity_decl'} = sub { $self->{'DeclHandler'}->internal_entity_decl(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->internal_entity_decl(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'DeclHandler'} and $method = $callbacks->{'DeclHandler'}->can('internal_entity_decl') ) {
+            $self->{Methods}->{'internal_entity_decl'} = sub { $method->($callbacks->{'DeclHandler'}, @_) };
+            $method->($callbacks->{DeclHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('internal_entity_decl') ) {
+            $self->{Methods}->{'internal_entity_decl'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'DeclHandler'} and $callbacks->{'DeclHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'DeclHandler'}->internal_entity_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'internal_entity_decl'} = sub { $callbacks->{'DeclHandler'}->internal_entity_decl(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->internal_entity_decl(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'internal_entity_decl'} = sub { $callbacks->{'Handler'}->internal_entity_decl(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'internal_entity_decl'} = sub { $self->{'Handler'}->internal_entity_decl(@_) };
+            $self->{Methods}->{'internal_entity_decl'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'internal_entity_decl'} = sub { $self->no_op };
-   }
 
 }
 
 sub start_entity {
     my $self = shift;
-    my $method;
     if (defined $self->{Methods}->{'start_entity'}) {
         $self->{Methods}->{'start_entity'}->(@_);
     }
-    elsif (defined $self->{'LexicalHandler'} and $method = $self->{'LexicalHandler'}->can('start_entity') ) {
-        $self->{Methods}->{'start_entity'} = sub { $self->{LexicalHandler}->start_entity(@_) };
-        $method->($self->{LexicalHandler}, @_);
-    }
-    elsif (defined $self->{'Handler'} and $method = $self->{'Handler'}->can('start_entity') ) {
-        $self->{Methods}->{'start_entity'} = sub { $self->{Handler}->start_entity(@_) };
-        $method->($self->{Handler}, @_);
-    }
-    elsif (defined $self->{'LexicalHandler'} and $self->{'LexicalHandler'}->can('AUTOLOAD') ) {
-        eval { $self->{'LexicalHandler'}->start_entity(@_) };
-        if ($@) {
-            die $@;
+    else {
+        my $method;
+        my $callbacks;
+        if (exists $self->{ParseOptions}) {
+            $callbacks = $self->{ParseOptions};
         }
         else {
-            $self->{Methods}->{'start_entity'} = sub { $self->{'LexicalHandler'}->start_entity(@_) };
+            $callbacks = $self;
         }
-    }
-    elsif (defined $self->{'Handler'} and $self->{'Handler'}->can('AUTOLOAD') ) {
-        eval { $self->{'Handler'}->start_entity(@_) };
-        if ($@) {
-            die $@;
+        if (0) { # dummy to make elsif's below compile
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $method = $callbacks->{'LexicalHandler'}->can('start_entity') ) {
+            $self->{Methods}->{'start_entity'} = sub { $method->($callbacks->{'LexicalHandler'}, @_) };
+            $method->($callbacks->{LexicalHandler}, @_);
+        }
+        elsif (defined $callbacks->{'Handler'} and $method = $callbacks->{'Handler'}->can('start_entity') ) {
+            $self->{Methods}->{'start_entity'} = sub { $method->($callbacks->{'Handler'}, @_) };
+            $method->($callbacks->{Handler}, @_);
+        }
+        elsif (defined $callbacks->{'LexicalHandler'} and $callbacks->{'LexicalHandler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'LexicalHandler'}->start_entity(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_entity'} = sub { $callbacks->{'LexicalHandler'}->start_entity(@_) };
+            }
+            return $res;
+        }
+        elsif (defined $callbacks->{'Handler'} and $callbacks->{'Handler'}->can('AUTOLOAD') ) {
+            my $res = eval { $callbacks->{'Handler'}->start_entity(@_) };
+            if ($@) {
+                die $@;
+            }
+            else {
+                # I think there's a buggette here...
+                # if the first call throws an exception, we don't set it up right.
+                # Not fatal, but we might want to address it.
+                $self->{Methods}->{'start_entity'} = sub { $callbacks->{'Handler'}->start_entity(@_) };
+            }
+            return $res;
         }
         else {
-            $self->{Methods}->{'start_entity'} = sub { $self->{'Handler'}->start_entity(@_) };
+            $self->{Methods}->{'start_entity'} = sub { $self->no_op };
         }
     }
-   else {
-       $self->{Methods}->{'start_entity'} = sub { $self->no_op };
-   }
 
 }
 
@@ -1449,25 +2115,24 @@ sub new {
 sub parse {
     my $self = shift;
     my $parse_options = $self->get_options(@_);
+    local $self->{ParseOptions} = $parse_options;
     if ($self->{Parent}) { # calling parse on a filter for some reason
         return $self->{Parent}->parse($parse_options);
     }
     else {
-        if (defined $parse_options->{Source}{CharacterStream} && $self->can('_parse_characterstream')) {
-            return $self->_parse_characterstream(
-                    $parse_options->{Source}{CharacterStream}, $parse_options);
+        my $method;
+        if (defined $parse_options->{Source}{CharacterStream} and $method = $self->can('_parse_characterstream')) {
+            warn("parse charstream???\n");
+            return $method->($self, $parse_options->{Source}{CharacterStream});
         }
-        elsif (defined $parse_options->{Source}{ByteStream} && $self->can('_parse_characterstream')) {
-            return $self->_parse_bytestream(
-                    $parse_options->{Source}{ByteStream}, $parse_options);
+        elsif (defined $parse_options->{Source}{ByteStream} and $method = $self->can('_parse_bytestream')) {
+            return $method->($self, $parse_options->{Source}{ByteStream});
         }
-        elsif (defined $parse_options->{Source}{String} && $self->can('_parse_string')) {
-            return $self->_parse_string(
-                    $parse_options->{Source}{String}, $parse_options);
+        elsif (defined $parse_options->{Source}{String} and $method = $self->can('_parse_string')) {
+            return $method->($self, $parse_options->{Source}{String});
         }
-        elsif (defined $parse_options->{Source}{SystemId} && $self->can('_parse_systemid')) {
-            return $self->_parse_systemid(
-                    $parse_options->{Source}{SystemId}, $parse_options);
+        elsif (defined $parse_options->{Source}{SystemId} and $method = $self->can('_parse_systemid')) {
+            return $method->($self, $parse_options->{Source}{SystemId});
         }
         else {
             die "No _parse_* routine defined on this driver (if it a filter, remember to set the Parent property) [$self]";
@@ -1574,6 +2239,50 @@ sub set_feature {
     # throw XML::SAX::Exception::NotSupported if it's there but we
     # don't support it
 }
+#-------------------------------------------------------------------#
+
+#-------------------------------------------------------------------#
+# set_handler and friends
+#-------------------------------------------------------------------#
+sub set_handler {
+    my $self = shift;
+    my ($new_handler, $handler_type) = reverse @_;
+    $handler_type ||= 'Handler';
+    $self->{Methods} = {} if $self->{Methods};
+    $self->{$handler_type} = $new_handler;
+    return 1;
+}
+
+sub set_document_handler {
+    my $self = shift;
+    return $self->set_handler('DocumentHandler', @_);
+}
+
+sub set_content_handler {
+    my $self = shift;
+    return $self->set_handler('ContentHandler', @_);
+}
+sub set_dtd_handler {
+    my $self = shift;
+    return $self->set_handler('DTDHandler', @_);
+}
+sub set_lexical_handler {
+    my $self = shift;
+    return $self->set_handler('LexicalHandler', @_);
+}
+sub set_decl_handler {
+    my $self = shift;
+    return $self->set_handler('DeclHandler', @_);
+}
+sub set_error_handler {
+    my $self = shift;
+    return $self->set_handler('ErrorHandler', @_);
+}
+sub set_entity_resolver {
+    my $self = shift;
+    return $self->set_handler('EntityResolver', @_);
+}
+
 #-------------------------------------------------------------------#
 
 #-------------------------------------------------------------------#
@@ -1756,6 +2465,22 @@ for features not defined by your class. An example would be:
   }
 
 Currently this part is unimplemented.
+
+
+=item * set_handler
+
+This method takes a handler type (Handler, ContentHandler, etc.) and a
+handler object as arguments, and changes the current handler for that
+handler type, while taking care of resetting the internal state that 
+needs to be reset. This allows one to change a handler during parse
+without running into problems (changing it on the parser object 
+directly will most likely cause trouble).
+
+=item * set_document_handler, set_content_handler, set_dtd_handler, set_lexical_handler, set_decl_handler, set_error_handler, set_entity_resolver
+
+These are just simple wrappers around the former method, and take a
+handler object as their argument. Internally they simply call
+set_handler with the correct arguments.
 
 =back
 
