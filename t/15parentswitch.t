@@ -20,16 +20,7 @@ ok($meth_count == 6);
 # end main
 
 package HandlerOne;
-BEGIN {
-    if ($] < 5.6) {
-        use XML::SAX::Base;
-        use vars qw/@ISA/;
-        @ISA =  qw/XML::SAX::Base/;
-    }
-    else {
-        use base qw/XML::SAX::Base/;
-    }
-}
+use base qw(XML::SAX::Base);
 
 sub start_element {
     my ($self, $element) = @_;
@@ -45,16 +36,7 @@ sub start_element {
 1;
 
 package HandlerTwo;
-BEGIN {
-    if ($] < 5.6) {
-        use XML::SAX::Base;
-        use vars qw/@ISA/;
-        @ISA =  qw/XML::SAX::Base/;
-    }
-    else {
-        use base qw/XML::SAX::Base/;
-    }
-}
+use base qw(XML::SAX::Base);
 
 sub start_element {
     my ($self, $element) = @_;
@@ -66,16 +48,7 @@ sub start_element {
 
 
 package Driver;
-BEGIN {
-    if ($] < 5.6) {
-        use XML::SAX::Base;
-        use vars qw/@ISA/;
-        @ISA =  qw/XML::SAX::Base/;
-    }
-    else {
-        use base qw/XML::SAX::Base/;
-    }
-}
+use base qw(XML::SAX::Base);
 
 sub parse {
     my $self = shift;

@@ -20,17 +20,7 @@ ok($meth_count == 15);
 # end main
 
 package MyDocHandler;
-BEGIN {
-    if ($] < 5.6) {
-        use XML::SAX::Base;
-        use vars qw/@ISA/;
-        @ISA =  qw/XML::SAX::Base/;
-    }
-    else {
-        use base qw/XML::SAX::Base/;
-    }
-}
-
+use base qw(XML::SAX::Base);
 # this space intentionally blank
 
 1;
@@ -42,16 +32,7 @@ use base qw(XML::SAX::Base);
 1;
 
 package Driver;
-BEGIN {
-    if ($] < 5.6) {
-        use XML::SAX::Base;
-        use vars qw/@ISA/;
-        @ISA =  qw/XML::SAX::Base/;
-    }
-    else {
-        use base qw/XML::SAX::Base/;
-    }
-}
+use base qw(XML::SAX::Base);
 
 sub parse {
     my $self = shift;

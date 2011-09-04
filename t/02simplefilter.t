@@ -17,16 +17,7 @@ use base qw(XML::SAX::Base);
 1;
 
 package Driver;
-BEGIN {
-    if ($] < 5.6) {
-        use XML::SAX::Base;
-        use vars qw/@ISA/;
-        @ISA =  qw/XML::SAX::Base/;
-    }
-    else {
-        use base qw/XML::SAX::Base/;
-    }
-}
+use base qw(XML::SAX::Base);
 
 sub parse {
     my $self = shift;

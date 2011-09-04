@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.10 2002/04/29 05:31:38 kip Exp $
+# $Id$
 
 use strict;
 
@@ -33,6 +33,7 @@ package XML::SAX::Base;
 # version 1.02 - Robin Berjon <robin@knowscape.com>
 # version 1.03 - Matt Sergeant <matt@sergeant.org>
 # version 1.04 - Kip Hampton <khampton@totalcinema.com>
+# version 1.05 - Grant McLean <grantm@cpan.org>
 
 #-----------------------------------------------------#
 # STOP!!!!!
@@ -47,7 +48,7 @@ use strict;
 use vars qw($VERSION);
 use XML::SAX::Exception qw();
 
-$VERSION = '1.04';
+$VERSION = '1.05';
 
 EOHEADER
 
@@ -117,7 +118,11 @@ sub $ev {
         }
             EOCANBLOCK
             $aload_string .= <<"            EOALOADBLOCK";
-        elsif (defined \$callbacks->{'$h'} and \$callbacks->{'$h'}->can('AUTOLOAD') ) {
+        elsif (defined \$callbacks->{'$h'} 
+        	and \$callbacks->{'$h'}->can('AUTOLOAD')
+        	and \$callbacks->{'$h'}->can('AUTOLOAD') ne (UNIVERSAL->can('AUTOLOAD') || '')
+        	)
+        {
             my \$res = eval { \$callbacks->{'$h'}->$ev(\@_) };
             if (\$@) {
                 die \$@;
@@ -199,7 +204,7 @@ sub parse {
             return $method->($self, $parse_options->{Source}{SystemId});
         }
         else {
-            die "No _parse_* routine defined on this driver (if it a filter, remember to set the Parent property) [$self]";
+            die "No _parse_* routine defined on this driver (If it is a filter, remember to set the Parent property. If you call the parse() method, make sure to set a Source. You may want to call parse_uri, parse_string or parse_file instead.) [$self]";
         }
     }
 }
@@ -211,6 +216,7 @@ sub parse {
 sub parse_file {
     my $self = shift;
     my $file = shift;
+    return $self->parse_uri($file, @_) if ref(\$file) eq 'SCALAR';
     my $parse_options = $self->get_options(@_);
     $parse_options->{Source}{ByteStream} = $file;
     return $self->parse($parse_options);
@@ -393,6 +399,7 @@ sub set_handler {
     $handler_type ||= 'Handler';
     $self->{Methods} = {} if $self->{Methods};
     $self->{$handler_type} = $new_handler;
+    $self->{ParseOptions}->{$handler_type} = $new_handler;
     return 1;
 }
 
@@ -752,7 +759,7 @@ L<XML::SAX>
 
 FOOTER
 
-    open(BASE, ">" . File::Spec->catdir("lib", "XML", "SAX", "Base.pm")) || die "Cannot write Base.pm: $!";
+    open(BASE, ">" . File::Spec->catfile("lib", "XML", "SAX", "Base.pm")) || die "Cannot write Base.pm: $!";
     print BASE $code;
     close BASE;
 }

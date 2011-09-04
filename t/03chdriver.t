@@ -25,16 +25,8 @@ foreach my $meth (keys(%ret)){
 # end main
 
 package Driver;
-BEGIN {
-    if ($] < 5.6) {
-        use XML::SAX::Base;
-        use vars qw/@ISA/;
-        @ISA =  qw/XML::SAX::Base/;
-    }
-    else {
-        use base qw/XML::SAX::Base/;
-    }
-}
+use base qw(XML::SAX::Base);
+
 sub parse {
     my $self = shift;
     my %events = %main::events;
