@@ -1,8 +1,12 @@
-Makefile.PL
+BuildSAXBase.PL
 Changes
-README
 MANIFEST
-lib/XML/SAX/placeholder.pl
+META.json
+Makefile.PL
+README
+dist.ini
+lib/XML/SAX/Base.pm
+lib/XML/SAX/Exception.pm
 t/00basic.t
 t/01exception.t
 t/01simpledriver.t
@@ -22,5 +26,4 @@ t/14downstreamswitch.t
 t/15parentswitch.t
 t/16gethandlers.t
 t/events.pl
-
-META.yml                                 Module meta-data (added by MakeMaker)
+t/release-pod-syntax.t
