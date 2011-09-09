@@ -1,6 +1,6 @@
 package XML::SAX::Base;
 BEGIN {
-  $XML::SAX::Base::VERSION = '1.06';
+  $XML::SAX::Base::VERSION = '1.07';
 }
 
 # version 0.10 - Kip Hampton <khampton@totalcinema.com>
@@ -20,6 +20,7 @@ BEGIN {
 # version 1.04 - Kip Hampton <khampton@totalcinema.com>
 # version 1.05 - Grant McLean <grantm@cpan.org>
 # version 1.06 - Grant McLean <grantm@cpan.org>
+# version 1.07 - Grant McLean <grantm@cpan.org>
 
 #-----------------------------------------------------#
 # STOP!!!!!
@@ -2868,7 +2869,7 @@ sub no_op {
 
 package XML::SAX::Base::NoHandler;
 BEGIN {
-  $XML::SAX::Base::NoHandler::VERSION = '1.06';
+  $XML::SAX::Base::NoHandler::VERSION = '1.07';
 }
 
 # we need a fake handler that doesn't implement anything, this

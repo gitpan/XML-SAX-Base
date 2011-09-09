@@ -22,7 +22,7 @@ my %WriteMakefileArgs = (
   'LICENSE' => 'perl',
   'NAME' => 'XML::SAX::Base',
   'PREREQ_PM' => {},
-  'VERSION' => '1.06',
+  'VERSION' => '1.07',
   'test' => {
     'TESTS' => 't/*.t'
   }
