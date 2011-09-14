@@ -1,6 +1,6 @@
 package XML::SAX::Exception;
 BEGIN {
-  $XML::SAX::Exception::VERSION = '1.07';
+  $XML::SAX::Exception::VERSION = '1.08';
 }
 
 use strict;
